@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  api-service:
+    build:
+      context: ./api_service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - API_V1_STR=/v1
+      - PROJECT_NAME=Code Execution API
+      - CORS_ORIGINS=*
+      - SECRET_KEY=change-this-in-production
+      - ACCESS_TOKEN_EXPIRE_MINUTES=60
+      - EXECUTION_SERVICE_URL=http://execution-service:8001
+      - INTERNAL_AUTH_TOKEN=change-this-in-production
+    depends_on:
+      - execution-service
+    networks:
+      - code-execution-network
+    restart: unless-stopped
+
+  execution-service:
+    build:
+      context: ./execution_service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - SERVICE_NAME=E2B Execution Service
+      - INTERNAL_AUTH_TOKEN=change-this-in-production
+      - INITIAL_POOL_SIZE=5
+      - MAX_POOL_SIZE=20
+      - DEFAULT_TIMEOUT=30
+      - MAX_TIMEOUT=300
+      - SUPPORTED_LANGUAGES=python,node,bash,c
+    networks:
+      - code-execution-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+
+networks:
+  code-execution-network:
+    driver: bridge
